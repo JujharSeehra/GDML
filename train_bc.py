@@ -8,7 +8,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader, random_split
 
 
-SESSION_DIR = "recordings/session_001"
+SESSION_DIR = "recordings/session_002"
 
 BATCH_SIZE = 64
 EPOCHS = 15

@@ -4,48 +4,51 @@ import cv2
 import numpy as np
 from pynput.mouse import Listener, Button
 from capture import ScreenCapture
+import Quartz
 
-SAVE_DIR = "recordings/session_001"
-FPS = 20
-mouse_held = False
-running = True
-def on_click(x,y,button,pressed):
-    global mouse_held
-    if button == Button.left:
-        mouse_held = pressed
+SAVE_DIR = "recordings/session_002"
+FPS = 30
+def mouse_is_held():
+    return Quartz.CGEventSourceButtonState(Quartz.kCGEventSourceStateHIDSystemState, Quartz.kCGMouseButtonLeft)
 def main():
     os.makedirs(SAVE_DIR, exist_ok=True)
-    capture = ScreenCapture(left=90, top=100, width=1000, height=700)
+    capture = ScreenCapture(left = 90, top = 100, width = 1000, height = 700)
     labels = []
-    listener = Listener(on_click=on_click)
-    listener.start
-    print("Recording starts in 3 seconds")
+    print("Recording Starts in 3 seconds")
     time.sleep(3)
-    print("RECORDING")
+    print("Recording")
     frame_index = 0
     frame_time = 1/FPS
+    previous_action = None
     try:
         while True:
-            start = time.time()
+            start_time = time.time()
+            held = mouse_is_held()
+            action = 1 if held else 0
+            if action != previous_action:
+                if action == 1:
+                    print("Down")
+                else:
+                    print("Up")
+                previous_action = action
             frame = capture.grab_processed()
             filename = f"frame_{frame_index:06d}.png"
             path = os.path.join(SAVE_DIR, filename)
             cv2.imwrite(path, frame)
-            action = 1 if mouse_held else 0
             labels.append(f"{filename},{action}\n")
             frame_index += 1
-            elapsed = time.time() - start
+            elapsed = time.time() - start_time
             sleep_time = frame_time - elapsed
             if sleep_time > 0:
                 time.sleep(sleep_time)
     except KeyboardInterrupt:
-        print("Stopping Recording")
-    with open(os.path.join(SAVE_DIR, "labels.csv"), "w") as f:
+        print("\nSTOPPING RECORDING")
+    csv_path = os.path.join(SAVE_DIR,"labels.csv")
+    with open(csv_path, "w") as f:
         f.write("filename,action\n")
         f.writelines(labels)
-    listener.stop()
-    print(f"Saved {frame_index} frames.")
-    print(f"Dataset saved to {SAVE_DIR}")
-
+    print()
+    print(f"Saved {frame_index} frames")
+    print(f"Dataset: {SAVE_DIR}")
 if __name__ == "__main__":
     main()
