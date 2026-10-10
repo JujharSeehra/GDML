@@ -6,6 +6,21 @@ class GDController:
     def __init__(self):
         self.held = False
 
+
+    def _send_key(self, keycode):
+        down = Quartz.CGEventCreateKeyboardEvent(None,keycode,True)
+        up = Quartz.CGEventCreateKeyboardEvent(None,keycode,False)
+        Quartz.CGEventPost(Quartz.kCGHIDEventTap,down)
+        Quartz.CGEventPost(Quartz.kCGHIDEventTap,up)
+
+    def toggle_pause(self):
+        """
+        Escape key on macOS.
+        Geometry Dash uses this to pause/unpause.
+        """
+        self.release()
+        self._send_key(53)
+        time.sleep(0.05)
     def _mouse_position(self):
         event = Quartz.CGEventCreate(None)
         position = Quartz.CGEventGetLocation(event)
