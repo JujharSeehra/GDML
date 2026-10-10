@@ -6,7 +6,22 @@ from pynput.mouse import Listener, Button
 from capture import ScreenCapture
 import Quartz
 
-SAVE_DIR = "recordings/session_002"
+BASE_DIR = "recordings"
+
+
+def get_next_session():
+    os.makedirs(BASE_DIR, exist_ok=True)
+
+    index = 1
+
+    while True:
+        path = os.path.join(BASE_DIR, f"session_{index:03d}")
+        if not os.path.exists(path):
+            return path
+        index += 1
+
+
+SAVE_DIR = get_next_session()
 FPS = 30
 def mouse_is_held():
     return Quartz.CGEventSourceButtonState(Quartz.kCGEventSourceStateHIDSystemState, Quartz.kCGMouseButtonLeft)
