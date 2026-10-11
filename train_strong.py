@@ -9,11 +9,6 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-
-# =========================================================
-# CONFIG
-# =========================================================
-
 TRAIN_SESSIONS = [
     "recordings/session_001",
     "recordings/session_002",
@@ -43,12 +38,6 @@ MAX_HOLD_WEIGHT = 4.0
 SEEDS = [
     42
 ]
-
-
-# =========================================================
-# DATASET
-# =========================================================
-
 class StrongGDDataset(Dataset):
 
     def __init__(
