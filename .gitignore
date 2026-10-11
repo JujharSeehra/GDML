@@ -1,3 +1,7 @@
 /recordings
 /venv
-/pycache
+/__pycache__
+/archives
+/logs
+/online_data
+/

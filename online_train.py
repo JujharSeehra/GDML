@@ -14,7 +14,7 @@ from torch.utils.data import (
     ConcatDataset,
 )
 
-from train_bc import DashNet
+from train_strong import StrongDashNet
 
 from online_config import (
     TRAIN_SESSIONS,
@@ -29,6 +29,7 @@ from online_config import (
     CORRECTION_SAMPLE_WEIGHT,
     ELITE_SAMPLE_WEIGHT,
     MAX_HOLD_CLASS_WEIGHT,
+    ACTION_LOOKAHEAD,
 )
 
 
@@ -58,9 +59,10 @@ class ExpertDataset(Dataset):
     def __len__(self):
 
         return (
-            len(self.data)
-            - FRAME_STACK
-            + 1
+        len(self.data)
+        - FRAME_STACK
+        - ACTION_LOOKAHEAD
+        + 1
         )
 
     def __getitem__(self, index):
@@ -97,10 +99,11 @@ class ExpertDataset(Dataset):
         ) / 255.0
 
         label_index = (
-            index
-            + FRAME_STACK
-            - 1
-        )
+    index
+    + FRAME_STACK
+    - 1
+    + ACTION_LOOKAHEAD
+)
 
         action = int(
             self.data.iloc[
@@ -333,13 +336,13 @@ def get_class_weights(device):
         df = pd.read_csv(path)
 
         session_labels = (
-            df["action"]
-            .iloc[
-                FRAME_STACK - 1:
-            ]
-            .astype(int)
-            .tolist()
-        )
+    df["action"]
+    .iloc[
+        FRAME_STACK - 1 + ACTION_LOOKAHEAD:
+    ]
+    .astype(int)
+    .tolist()
+)
 
         labels.extend(
             session_labels
@@ -650,7 +653,7 @@ def train_online_model():
     # --------------------------------------------------
 
     old_model = (
-        DashNet().to(
+        StrongDashNet().to(
             device
         )
     )
@@ -682,7 +685,7 @@ def train_online_model():
     # --------------------------------------------------
 
     model = (
-        DashNet().to(
+        StrongDashNet().to(
             device
         )
     )

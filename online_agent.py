@@ -18,8 +18,7 @@ from capture import ScreenCapture
 from controller import GDController
 from attempt_detector import AttemptDetector
 
-from train_bc import DashNet
-
+from train_strong import StrongDashNet
 from online_train import (
     train_online_model,
 )
@@ -154,7 +153,7 @@ def get_device():
 def load_model(device):
 
     model = (
-        DashNet().to(
+        StrongDashNet().to(
             device
         )
     )
@@ -544,6 +543,7 @@ def main():
     previous_action = None
 
     correction_counter = 0
+    ignore_input_until = 0.0
 
     print()
     print(
@@ -645,6 +645,7 @@ def main():
 
                     previous_action = None
                     correction_counter = 0
+                    ignore_input_until = time.time() + 0.35
 
                     continue
 
@@ -887,11 +888,13 @@ def main():
 # do not allow AI inputs.
 # ------------------------------------------------
 
-            if banner_present:
+            if time.time() < ignore_input_until:
 
                 controller.release()
 
-                continue        
+                frame_buffer.clear()
+
+                continue     
 
             frame_buffer.append(
                 raw_frame.copy()

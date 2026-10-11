@@ -16,11 +16,15 @@ CAPTURE_HEIGHT = 700
 # MODEL
 # ---------------------------------------------------------
 
-FRAME_STACK = 4
 FPS = 30
 
-BASE_MODEL_PATH = "models/dash_bc.pth"
+FRAME_STACK = 6
+ACTION_LOOKAHEAD = 2
+
+BASE_MODEL_PATH = "models/dash_strong_baseline.pth"
+
 ONLINE_MODEL_PATH = "models/dash_online.pth"
+
 CANDIDATE_MODEL_PATH = "models/dash_online_candidate.pth"
 
 
@@ -33,11 +37,10 @@ TRAIN_SESSIONS = [
     "recordings/session_002",
     "recordings/session_003",
     "recordings/session_004",
-    "recordings/session_005",
-    "recordings/session_006",
+    "recordings/session_004",
 ]
 
-VAL_SESSION = "recordings/session_007"
+VAL_SESSION = "recordings/session_005"
 
 
 # ---------------------------------------------------------
@@ -101,49 +104,36 @@ CORRECTION_SAVE_EVERY = 2
 # use around 0.03.
 #
 
-EXPLORATION_RATE = 0.00
+EXPLORATION_RATE = 0.01
+UNCERTAINTY_THRESHOLD = 0.75
 
-UNCERTAINTY_THRESHOLD = 0.70
 
-
-# ---------------------------------------------------------
-# SELF-IMITATION
-# ---------------------------------------------------------
-
+# Elite self-imitation
 MIN_ELITE_SECONDS = 3.0
 
-# Save runs that reach at least 85% of the current best.
-ELITE_FRACTION_OF_BEST = 0.85
+ELITE_FRACTION_OF_BEST = 0.93
 
-MAX_ELITE_FILES = 25
+MAX_ELITE_FILES = 40
 
 
-# ---------------------------------------------------------
-# ONLINE TRAINING
-# ---------------------------------------------------------
+# Online fine-tuning
+RETRAIN_EVERY_ATTEMPTS = 25
 
-RETRAIN_EVERY_ATTEMPTS = 9999
-
-ONLINE_EPOCHS = 4
+ONLINE_EPOCHS = 2
 
 BATCH_SIZE = 64
 
-LEARNING_RATE = 0.0003
+LEARNING_RATE = 0.00005
 
 
-# Original human demonstration
+# Dataset importance
 EXPERT_SAMPLE_WEIGHT = 1.0
 
-# Your DAgger-style corrections
 CORRECTION_SAMPLE_WEIGHT = 3.0
 
-# Agent's successful self-generated examples
-ELITE_SAMPLE_WEIGHT = 0.25
+ELITE_SAMPLE_WEIGHT = 1.0
 
-
-# Don't let HOLD class weighting explode.
-MAX_HOLD_CLASS_WEIGHT = 6.0
-
+MAX_HOLD_CLASS_WEIGHT = 3.0
 # ---------------------------------------------------------
 # ATTEMPT / EPISODE DETECTION
 # ---------------------------------------------------------

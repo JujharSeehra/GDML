@@ -12,11 +12,10 @@ TRAIN_SESSIONS = [
     "recordings/session_002",
     "recordings/session_003",
     "recordings/session_004",
-    "recordings/session_005",
-    "recordings/session_006"
+    "recordings/session_004"
 ]
 
-VAL_SESSION = "recordings/session_007"
+VAL_SESSION = "recordings/session_005"
 FRAME_STACK = 4
 BATCH_SIZE = 64
 EPOCHS = 20

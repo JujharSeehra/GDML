@@ -22,7 +22,7 @@ def main():
         device = torch.device("cpu")
     print(f"Using Device {device}")
     model = DashNet().to(device)
-    model.load_state_dict(torch.load("models/dash_bc.pth", map_location=device))
+    model.load_state_dict(torch.load("models/dash_bc_baseline.pth", map_location=device))
     model.eval()
     frame_buffer = deque(maxlen=FRAME_STACK)
     print("ML Starts in 3 seconds")
