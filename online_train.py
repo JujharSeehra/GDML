@@ -8,16 +8,14 @@ import pandas as pd
 import torch
 
 from torch import nn
-from torch.utils.data import (
-    Dataset,
+from torch.utils.data import (Dataset,
     DataLoader,
     ConcatDataset,
 )
 
 from train_strong import StrongDashNet
 
-from online_config import (
-    TRAIN_SESSIONS,
+from online_config import (TRAIN_SESSIONS,
     VAL_SESSION,
     FRAME_STACK,
     ONLINE_MODEL_PATH,
@@ -39,31 +37,24 @@ from online_config import (
 
 class ExpertDataset(Dataset):
 
-    def __init__(
-        self,
+    def __init__(self,
         session_dir,
-        sample_weight=1.0,
-    ):
+        sample_weight=1.0,):
 
         self.session_dir = session_dir
 
         self.sample_weight = sample_weight
 
-        csv_path = os.path.join(
-            session_dir,
-            "labels.csv"
-        )
+        csv_path = os.path.join(session_dir,
+            "labels.csv")
 
         self.data = pd.read_csv(csv_path)
 
     def __len__(self):
 
-        return (
-        len(self.data)
-        - FRAME_STACK
+        return (len(self.data) - FRAME_STACK
         - ACTION_LOOKAHEAD
-        + 1
-        )
+        + 1)
 
     def __getitem__(self, index):
 
@@ -77,54 +68,35 @@ class ExpertDataset(Dataset):
                 row_index
             ]["filename"]
 
-            path = os.path.join(
-                self.session_dir,
-                filename
-            )
+            path = os.path.join(self.session_dir,
+                filename)
 
-            frame = cv2.imread(
-                path,
-                cv2.IMREAD_GRAYSCALE
-            )
+            frame = cv2.imread(path,
+                cv2.IMREAD_GRAYSCALE)
 
             if frame is None:
                 raise FileNotFoundError(path)
 
             frames.append(frame)
 
-        frames = np.stack(
-            frames
-        ).astype(
-            np.float32
-        ) / 255.0
+        frames = np.stack(frames).astype(np.float32) / 255.0
 
-        label_index = (
-    index
+        label_index = (index
     + FRAME_STACK
     - 1
     + ACTION_LOOKAHEAD
 )
 
-        action = int(
-            self.data.iloc[
+        action = int(self.data.iloc[
                 label_index
-            ]["action"]
-        )
+            ]["action"])
 
-        return (
-            torch.tensor(
-                frames,
-                dtype=torch.float32
-            ),
-            torch.tensor(
-                action,
-                dtype=torch.long
-            ),
-            torch.tensor(
-                self.sample_weight,
-                dtype=torch.float32
-            ),
-        )
+        return (torch.tensor(frames,
+                dtype=torch.float32),
+            torch.tensor(action,
+                dtype=torch.long),
+            torch.tensor(self.sample_weight,
+                dtype=torch.float32),)
 
 
 # =========================================================
@@ -137,11 +109,7 @@ class CorrectionDataset(Dataset):
 
         self.samples = []
 
-        files = sorted(
-            glob.glob(
-                "online_data/corrections/*.npz"
-            )
-        )
+        files = sorted(glob.glob("online_data/corrections/*.npz"))
 
         for path in files:
 
@@ -151,50 +119,28 @@ class CorrectionDataset(Dataset):
                 "frames"
             ].astype(np.uint8)
 
-            action = int(
-                data["action"]
-            )
+            action = int(data["action"])
 
-            self.samples.append(
-                (
-                    frames,
-                    action
-                )
-            )
+            self.samples.append((frames,
+                    action))
 
     def __len__(self):
 
-        return len(
-            self.samples
-        )
+        return len(self.samples)
 
     def __getitem__(self, index):
 
-        frames, action = (
-            self.samples[index]
-        )
+        frames, action = (self.samples[index])
 
-        frames = (
-            frames.astype(
-                np.float32
-            )
-            / 255.0
-        )
+        frames = (frames.astype(np.float32)
+            / 255.0)
 
-        return (
-            torch.tensor(
-                frames,
-                dtype=torch.float32
-            ),
-            torch.tensor(
-                action,
-                dtype=torch.long
-            ),
-            torch.tensor(
-                CORRECTION_SAMPLE_WEIGHT,
-                dtype=torch.float32
-            ),
-        )
+        return (torch.tensor(frames,
+                dtype=torch.float32),
+            torch.tensor(action,
+                dtype=torch.long),
+            torch.tensor(CORRECTION_SAMPLE_WEIGHT,
+                dtype=torch.float32),)
 
 
 # =========================================================
@@ -209,11 +155,7 @@ class EliteDataset(Dataset):
 
         self.index = []
 
-        paths = sorted(
-            glob.glob(
-                "online_data/elite/*.npz"
-            )
-        )
+        paths = sorted(glob.glob("online_data/elite/*.npz"))
 
         for path in paths:
 
@@ -227,77 +169,45 @@ class EliteDataset(Dataset):
                 "actions"
             ].astype(np.int64)
 
-            trajectory_index = len(
-                self.trajectories
-            )
+            trajectory_index = len(self.trajectories)
 
-            self.trajectories.append(
-                (
-                    frames,
-                    actions
-                )
-            )
+            self.trajectories.append((frames,
+                    actions))
 
-            for i in range(
-                FRAME_STACK - 1,
-                len(frames)
-            ):
+            for i in range(FRAME_STACK - 1,
+                len(frames)):
 
-                self.index.append(
-                    (
-                        trajectory_index,
-                        i
-                    )
-                )
+                self.index.append((trajectory_index,
+                        i))
 
     def __len__(self):
 
-        return len(
-            self.index
-        )
+        return len(self.index)
 
     def __getitem__(self, index):
 
-        trajectory_index, i = (
-            self.index[index]
-        )
+        trajectory_index, i = (self.index[index])
 
-        frames, actions = (
-            self.trajectories[
+        frames, actions = (self.trajectories[
                 trajectory_index
-            ]
-        )
+            ])
 
         stack = frames[
             i - FRAME_STACK + 1:
             i + 1
         ]
 
-        stack = (
-            stack.astype(
-                np.float32
-            )
-            / 255.0
-        )
+        stack = (stack.astype(np.float32)
+            / 255.0)
 
-        action = int(
-            actions[i]
-        )
+        action = int(actions[i])
 
-        return (
-            torch.tensor(
-                stack,
-                dtype=torch.float32
-            ),
-            torch.tensor(
-                action,
-                dtype=torch.long
-            ),
-            torch.tensor(
-                ELITE_SAMPLE_WEIGHT,
-                dtype=torch.float32
-            ),
-        )
+        return (torch.tensor(stack,
+                dtype=torch.float32),
+            torch.tensor(action,
+                dtype=torch.long),
+            torch.tensor(ELITE_SAMPLE_WEIGHT,
+                dtype=torch.float32),)
 
 
 # =========================================================
@@ -328,15 +238,12 @@ def get_class_weights(device):
     # Human demonstrations
     for session in TRAIN_SESSIONS:
 
-        path = os.path.join(
-            session,
-            "labels.csv"
-        )
+        path = os.path.join(session,
+            "labels.csv")
 
         df = pd.read_csv(path)
 
-        session_labels = (
-    df["action"]
+        session_labels = (df["action"]
     .iloc[
         FRAME_STACK - 1 + ACTION_LOOKAHEAD:
     ]
@@ -344,70 +251,44 @@ def get_class_weights(device):
     .tolist()
 )
 
-        labels.extend(
-            session_labels
-        )
+        labels.extend(session_labels)
 
     # Human corrections
-    for path in glob.glob(
-        "online_data/corrections/*.npz"
-    ):
+    for path in glob.glob("online_data/corrections/*.npz"):
 
         data = np.load(path)
 
-        labels.append(
-            int(data["action"])
-        )
+        labels.append(int(data["action"]))
 
-    counts = np.bincount(
-        labels,
-        minlength=2
-    )
+    counts = np.bincount(labels,
+        minlength=2)
 
-    release_count = max(
-        int(counts[0]),
-        1
-    )
+    release_count = max(int(counts[0]),
+        1)
 
-    hold_count = max(
-        int(counts[1]),
-        1
-    )
+    hold_count = max(int(counts[1]),
+        1)
 
-    ratio = (
-        release_count
-        / hold_count
-    )
+    ratio = (release_count
+        / hold_count)
 
-    hold_weight = min(
-        ratio,
-        MAX_HOLD_CLASS_WEIGHT
-    )
+    hold_weight = min(ratio,
+        MAX_HOLD_CLASS_WEIGHT)
 
-    weights = torch.tensor(
-        [
+    weights = torch.tensor([
             1.0,
             hold_weight
         ],
         dtype=torch.float32,
-        device=device
-    )
+        device=device)
 
-    print(
-        "Human label counts:"
-    )
+    print("Human label counts:")
 
-    print(
-        f"  RELEASE: {release_count}"
-    )
+    print(f"  RELEASE: {release_count}")
 
-    print(
-        f"  HOLD:    {hold_count}"
-    )
+    print(f"  HOLD:    {hold_count}")
 
-    print(
-        f"Class weights: {weights}"
-    )
+    print(f"Class weights: {weights}")
 
     return weights
 
@@ -416,8 +297,7 @@ def get_class_weights(device):
 # VALIDATION
 # =========================================================
 
-def evaluate(
-    model,
+def evaluate(model,
     loader,
     device
 ):
@@ -435,104 +315,62 @@ def evaluate(
 
     with torch.no_grad():
 
-        for (
-            frames,
+        for (frames,
             labels,
-            _
-        ) in loader:
+            _) in loader:
 
-            frames = frames.to(
-                device
-            )
+            frames = frames.to(device)
 
-            labels = labels.to(
-                device
-            )
+            labels = labels.to(device)
 
-            output = model(
-                frames
-            )
+            output = model(frames)
 
-            predictions = (
-                output.argmax(
-                    dim=1
-                )
-            )
+            predictions = (output.argmax(dim=1))
 
-            total_correct += (
-                predictions
-                == labels
-            ).sum().item()
+            total_correct += (predictions
+                == labels).sum().item()
 
             total += labels.size(0)
 
-            release_mask = (
-                labels == 0
-            )
+            release_mask = (labels == 0)
 
-            hold_mask = (
-                labels == 1
-            )
+            hold_mask = (labels == 1)
 
-            release_total += (
-                release_mask
+            release_total += (release_mask
                 .sum()
-                .item()
-            )
+                .item())
 
-            hold_total += (
-                hold_mask
+            hold_total += (hold_mask
                 .sum()
-                .item()
-            )
+                .item())
 
-            release_correct += (
-                (
-                    predictions[
+            release_correct += ((predictions[
                         release_mask
                     ]
-                    == 0
-                )
+                    == 0)
                 .sum()
-                .item()
-            )
+                .item())
 
-            hold_correct += (
-                (
-                    predictions[
+            hold_correct += ((predictions[
                         hold_mask
                     ]
-                    == 1
-                )
+                    == 1)
                 .sum()
-                .item()
-            )
+                .item())
 
-    accuracy = (
-        total_correct
-        / max(total, 1)
-    )
+    accuracy = (total_correct
+        / max(total, 1))
 
-    release_recall = (
-        release_correct
-        / max(
-            release_total,
-            1
-        )
-    )
+    release_recall = (release_correct
+        / max(release_total,
+            1))
 
-    hold_recall = (
-        hold_correct
-        / max(
-            hold_total,
-            1
-        )
-    )
+    hold_recall = (hold_correct
+        / max(hold_total,
+            1))
 
-    balanced_accuracy = (
-        release_recall
-        + hold_recall
-    ) / 2
+    balanced_accuracy = (release_recall
+        + hold_recall) / 2
 
     return {
         "accuracy":
@@ -558,168 +396,90 @@ def train_online_model():
     device = get_device()
 
     print()
-    print(
-        "===== ONLINE TRAINING ====="
-    )
+    print("===== ONLINE TRAINING =====")
 
-    print(
-        f"Device: {device}"
-    )
+    print(f"Device: {device}")
 
     datasets = []
 
     # Human data
     for session in TRAIN_SESSIONS:
 
-        datasets.append(
-            ExpertDataset(
-                session,
-                EXPERT_SAMPLE_WEIGHT
-            )
-        )
+        datasets.append(ExpertDataset(session,
+                EXPERT_SAMPLE_WEIGHT))
 
     # Corrections
-    correction_dataset = (
-        CorrectionDataset()
-    )
+    correction_dataset = (CorrectionDataset())
 
-    if len(
-        correction_dataset
-    ) > 0:
+    if len(correction_dataset) > 0:
 
-        datasets.append(
-            correction_dataset
-        )
+        datasets.append(correction_dataset)
 
     # Good AI trajectories
-    elite_dataset = (
-        EliteDataset()
-    )
+    elite_dataset = (EliteDataset())
 
-    if len(
-        elite_dataset
-    ) > 0:
+    if len(elite_dataset) > 0:
 
-        datasets.append(
-            elite_dataset
-        )
+        datasets.append(elite_dataset)
 
-    train_dataset = (
-        ConcatDataset(
-            datasets
-        )
-    )
+    train_dataset = (ConcatDataset(datasets))
 
-    val_dataset = (
-        ExpertDataset(
-            VAL_SESSION,
-            1.0
-        )
-    )
+    val_dataset = (ExpertDataset(VAL_SESSION,
+            1.0))
 
-    train_loader = (
-        DataLoader(
-            train_dataset,
+    train_loader = (DataLoader(train_dataset,
             batch_size=BATCH_SIZE,
-            shuffle=True
-        )
-    )
+            shuffle=True))
 
-    val_loader = (
-        DataLoader(
-            val_dataset,
+    val_loader = (DataLoader(val_dataset,
             batch_size=BATCH_SIZE,
-            shuffle=False
-        )
-    )
+            shuffle=False))
 
-    print(
-        f"Human correction samples: "
-        f"{len(correction_dataset)}"
-    )
+    print(f"Human correction samples: "
+        f"{len(correction_dataset)}")
 
-    print(
-        f"Elite samples: "
-        f"{len(elite_dataset)}"
-    )
+    print(f"Elite samples: "
+        f"{len(elite_dataset)}")
 
-    print(
-        f"Total training samples: "
-        f"{len(train_dataset)}"
-    )
+    print(f"Total training samples: "
+        f"{len(train_dataset)}")
 
     # --------------------------------------------------
     # CURRENT MODEL
     # --------------------------------------------------
 
-    old_model = (
-        StrongDashNet().to(
-            device
-        )
-    )
+    old_model = (StrongDashNet().to(device))
 
-    old_model.load_state_dict(
-        torch.load(
-            ONLINE_MODEL_PATH,
-            map_location=device
-        )
-    )
+    old_model.load_state_dict(torch.load(ONLINE_MODEL_PATH,
+            map_location=device))
 
-    old_metrics = evaluate(
-        old_model,
+    old_metrics = evaluate(old_model,
         val_loader,
-        device
-    )
+        device)
 
     print()
-    print(
-        "Current validation:"
-    )
+    print("Current validation:")
 
-    print(
-        old_metrics
-    )
+    print(old_metrics)
 
     # --------------------------------------------------
     # CANDIDATE MODEL
     # --------------------------------------------------
 
-    model = (
-        StrongDashNet().to(
-            device
-        )
-    )
+    model = (StrongDashNet().to(device))
 
-    model.load_state_dict(
-        torch.load(
-            ONLINE_MODEL_PATH,
-            map_location=device
-        )
-    )
+    model.load_state_dict(torch.load(ONLINE_MODEL_PATH,
+            map_location=device))
 
-    class_weights = (
-        get_class_weights(
-            device
-        )
-    )
+    class_weights = (get_class_weights(device))
 
-    criterion = (
-        nn.CrossEntropyLoss(
-            weight=class_weights,
-            reduction="none"
-        )
-    )
+    criterion = (nn.CrossEntropyLoss(weight=class_weights,
+            reduction="none"))
 
-    optimizer = (
-        torch.optim.Adam(
-            model.parameters(),
-            lr=LEARNING_RATE
-        )
-    )
+    optimizer = (torch.optim.Adam(model.parameters(),
+            lr=LEARNING_RATE))
 
-    for epoch in range(
-        ONLINE_EPOCHS
-    ):
+    for epoch in range(ONLINE_EPOCHS):
 
         model.train()
 
@@ -727,79 +487,51 @@ def train_online_model():
 
         batches = 0
 
-        for (
-            frames,
+        for (frames,
             labels,
-            sample_weights
-        ) in train_loader:
+            sample_weights) in train_loader:
 
-            frames = frames.to(
-                device
-            )
+            frames = frames.to(device)
 
-            labels = labels.to(
-                device
-            )
+            labels = labels.to(device)
 
-            sample_weights = (
-                sample_weights.to(
-                    device
-                )
-            )
+            sample_weights = (sample_weights.to(device))
 
             optimizer.zero_grad()
 
-            outputs = model(
-                frames
-            )
+            outputs = model(frames)
 
-            losses = criterion(
-                outputs,
-                labels
-            )
+            losses = criterion(outputs,
+                labels)
 
-            loss = (
-                losses
-                * sample_weights
-            ).mean()
+            loss = (losses
+                * sample_weights).mean()
 
             loss.backward()
 
             optimizer.step()
 
-            running_loss += (
-                loss.item()
-            )
+            running_loss += (loss.item())
 
             batches += 1
 
-        print(
-            f"Online epoch "
+        print(f"Online epoch "
             f"{epoch + 1}/"
             f"{ONLINE_EPOCHS} | "
             f"loss="
-            f"{running_loss / max(batches, 1):.4f}"
-        )
+            f"{running_loss / max(batches, 1):.4f}")
 
-    new_metrics = evaluate(
-        model,
+    new_metrics = evaluate(model,
         val_loader,
-        device
-    )
+        device)
 
     print()
-    print(
-        "Candidate validation:"
-    )
+    print("Candidate validation:")
 
-    print(
-        new_metrics
-    )
+    print(new_metrics)
 
-    torch.save(
-        model.state_dict(),
-        CANDIDATE_MODEL_PATH
-    )
+    torch.save(model.state_dict(),
+        CANDIDATE_MODEL_PATH)
 
     # --------------------------------------------------
     # SAFETY GATE
@@ -809,57 +541,41 @@ def train_online_model():
     # independent validation performance.
     #
 
-    balanced_ok = (
-        new_metrics[
+    balanced_ok = (new_metrics[
             "balanced_accuracy"
         ]
         >=
         old_metrics[
             "balanced_accuracy"
-        ] - 0.01
-    )
+        ] - 0.01)
 
-    hold_ok = (
-        new_metrics[
+    hold_ok = (new_metrics[
             "hold_recall"
         ]
         >=
         old_metrics[
             "hold_recall"
-        ] - 0.05
-    )
+        ] - 0.05)
 
-    accepted = (
-        balanced_ok
-        and hold_ok
-    )
+    accepted = (balanced_ok
+        and hold_ok)
 
     if accepted:
 
-        shutil.copy2(
-            CANDIDATE_MODEL_PATH,
-            ONLINE_MODEL_PATH
-        )
+        shutil.copy2(CANDIDATE_MODEL_PATH,
+            ONLINE_MODEL_PATH)
 
         print()
-        print(
-            "ACCEPTED candidate model."
-        )
+        print("ACCEPTED candidate model.")
 
     else:
 
         print()
-        print(
-            "REJECTED candidate model."
-        )
+        print("REJECTED candidate model.")
 
-        print(
-            "Keeping previous policy."
-        )
+        print("Keeping previous policy.")
 
-    print(
-        "==========================="
-    )
+    print("===========================")
 
     return accepted
 
